@@ -16,6 +16,7 @@ pub const Registers = struct {
     h: u8,
     l: u8,
 
+    // setters and getters assume inputs are little endian and output the two bytes in little endian
     pub fn get_af(self: Registers) u16 {
         return @as(u16, self.f.toU8()) << 8 | @as(u16, self.a);
     }

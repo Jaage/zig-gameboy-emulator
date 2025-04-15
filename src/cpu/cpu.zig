@@ -131,7 +131,31 @@ const CPU = struct {
             // Instruction.LD_SP_HL => self.load,
             // Instruction.LD_A_a16p => self.load,
 
+            Instruction.PUSH_BC => self.push(self.regs.get_bc()),
+            Instruction.PUSH_DE => self.push(self.regs.get_de()),
+            Instruction.PUSH_HL => self.push(self.regs.get_hl()),
             Instruction.PUSH_AF => self.push(self.regs.get_af()),
+
+            Instruction.POP_BC => blk: {
+                const popped_value = self.pop();
+                self.regs.set_bc(popped_value);
+                break :blk self.pc +% 1;
+            },
+            Instruction.POP_DE => blk: {
+                const popped_value = self.pop();
+                self.regs.set_de(popped_value);
+                break :blk self.pc +% 1;
+            },
+            Instruction.POP_HL => blk: {
+                const popped_value = self.pop();
+                self.regs.set_hl(popped_value);
+                break :blk self.pc +% 1;
+            },
+            Instruction.POP_AF => blk: {
+                const popped_value = self.pop();
+                self.regs.set_af(popped_value);
+                break :blk self.pc +% 1;
+            },
             else => 0,
         };
     }
@@ -154,7 +178,7 @@ const CPU = struct {
 
     pub fn loadR8N8(self: *CPU, l: *u8, r: u8) u16 {
         l.* = r;
-        return self.pc + 1;
+        return self.pc +% 1;
     }
 
     // pub fn loadR16N16(l: []u8, r: u16) void {
@@ -167,11 +191,19 @@ const CPU = struct {
     // }
 
     pub fn push(self: *CPU, value: u16) u16 {
-        self.sp -= 1;
+        self.sp -%= 1;
         self.bus.memory[self.sp] = @truncate(value & 0x00FF);
-        self.sp -= 1;
+        self.sp -%= 1;
         self.bus.memory[self.sp] = @truncate((value & 0xFF00) >> 8);
-        return self.pc + 1;
+        return self.pc +% 1;
+    }
+
+    pub fn pop(self: *CPU) u16 {
+        const lsb = self.bus.readByte(self.sp);
+        self.sp +%= 1;
+        const msb = self.bus.readByte(self.sp);
+        self.sp +%= 1;
+        return (@as(u16, lsb) << 8) | msb;
     }
 
     pub fn add(self: *CPU, value: u8) u16 {
@@ -458,4 +490,41 @@ test "CPU.push AF no lower 4 bits set in f" {
     cpu.step();
     try testing.expect(cpu.bus.readByte(cpu.sp + 1) == 0x34);
     try testing.expect(cpu.bus.readByte(cpu.sp) == 0xD0); // tricky, this is 10 because f register drops lower 4 bits
+}
+
+test "CPU.POP_BC" {
+    cpu.pc = 0;
+    cpu.sp = 65533;
+    cpu.bus.memory[65534] = 0xF2;
+    cpu.bus.memory[65533] = 0x53;
+    cpu.bus.memory[0] = 0xC1;
+    cpu.step();
+    try testing.expect(cpu.regs.get_bc() == 0x53F2);
+}
+test "CPU.POP_DE" {
+    cpu.pc = 0;
+    cpu.sp = 65533;
+    cpu.bus.memory[65534] = 0x5D;
+    cpu.bus.memory[65533] = 0x6C;
+    cpu.bus.memory[0] = 0xD1;
+    cpu.step();
+    try testing.expect(cpu.regs.get_de() == 0x6C5D);
+}
+test "CPU.POP_HL" {
+    cpu.pc = 0;
+    cpu.sp = 65533;
+    cpu.bus.memory[65534] = 0x27;
+    cpu.bus.memory[65533] = 0xCD;
+    cpu.bus.memory[0] = 0xE1;
+    cpu.step();
+    try testing.expect(cpu.regs.get_hl() == 0xCD27);
+}
+test "CPU.POP_AF" {
+    cpu.pc = 0;
+    cpu.sp = 65533;
+    cpu.bus.memory[65534] = 0xF2;
+    cpu.bus.memory[65533] = 0x53;
+    cpu.bus.memory[0] = 0xF1;
+    cpu.step();
+    try testing.expect(cpu.regs.get_af() == 0x50F2);
 }
