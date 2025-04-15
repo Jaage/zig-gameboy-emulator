@@ -14,6 +14,7 @@ const prefixInstFromByte = instructions.prefixInstFromByte;
 const CPU = struct {
     regs: Registers,
     pc: u16,
+    sp: u16,
     bus: MemoryBus,
 
     pub fn executeInst(self: *CPU, inst: Instruction) u16 {
@@ -71,56 +72,56 @@ const CPU = struct {
             Instruction.LD_C_D => self.loadR8N8(&self.regs.c, self.regs.d),
             Instruction.LD_C_E => self.loadR8N8(&self.regs.c, self.regs.e),
             Instruction.LD_C_H => self.loadR8N8(&self.regs.c, self.regs.h),
-            Instruction.LD_C_L => self.loadR8N8(&self.regs.c, self.bus.readByte(self.regs.get_hl())),
-            Instruction.LD_C_HLA => self.loadR8N8(&self.regs.c, self.regs.l),
+            Instruction.LD_C_L => self.loadR8N8(&self.regs.c, self.regs.l),
+            Instruction.LD_C_HLA => self.loadR8N8(&self.regs.c, self.bus.readByte(self.regs.get_hl())),
             Instruction.LD_C_A => self.loadR8N8(&self.regs.c, self.regs.a),
-            // Instruction.LD_D_B => self.loadR8N8(),
-            // Instruction.LD_D_C => self.loadR8N8(),
-            // Instruction.LD_D_D => self.loadR8N8(),
-            // Instruction.LD_D_E => self.loadR8N8(),
-            // Instruction.LD_D_H => self.loadR8N8(),
-            // Instruction.LD_D_L => self.loadR8N8(),
-            // Instruction.LD_D_HLA => self.loadR8N8(),
-            // Instruction.LD_D_A => self.loadR8N8(),
-            // Instruction.LD_E_B => self.loadR8N8(),
-            // Instruction.LD_E_C => self.loadR8N8(),
-            // Instruction.LD_E_D => self.loadR8N8(),
-            // Instruction.LD_E_E => self.loadR8N8(),
-            // Instruction.LD_E_H => self.loadR8N8(),
-            // Instruction.LD_E_L => self.loadR8N8(),
-            // Instruction.LD_E_HLA => self.loadR8N8(),
-            // Instruction.LD_E_A => self.loadR8N8(),
-            // Instruction.LD_H_B => self.loadR8N8(),
-            // Instruction.LD_H_C => self.loadR8N8(),
-            // Instruction.LD_H_D => self.loadR8N8(),
-            // Instruction.LD_H_E => self.loadR8N8(),
-            // Instruction.LD_H_H => self.loadR8N8(),
-            // Instruction.LD_H_L => self.loadR8N8(),
-            // Instruction.LD_H_HLA => self.loadR8N8(),
-            // Instruction.LD_H_A => self.loadR8N8(),
-            // Instruction.LD_L_B => self.loadR8N8(),
-            // Instruction.LD_L_C => self.loadR8N8(),
-            // Instruction.LD_L_D => self.loadR8N8(),
-            // Instruction.LD_L_E => self.loadR8N8(),
-            // Instruction.LD_L_H => self.loadR8N8(),
-            // Instruction.LD_L_L => self.loadR8N8(),
-            // Instruction.LD_L_HLA => self.loadR8N8(),
-            // Instruction.LD_L_A => self.loadR8N8(),
-            // Instruction.LD_HLA_B => self.load,
-            // Instruction.LD_HLA_C => self.load,
-            // Instruction.LD_HLA_D => self.load,
-            // Instruction.LD_HLA_E => self.load,
-            // Instruction.LD_HLA_H => self.load,
-            // Instruction.LD_HLA_L => self.load,
-            // Instruction.LD_HLA_A => self.load,
-            // Instruction.LD_A_B => self.load,
-            // Instruction.LD_A_C => self.load,
-            // Instruction.LD_A_D => self.load,
-            // Instruction.LD_A_E => self.load,
-            // Instruction.LD_A_H => self.load,
-            // Instruction.LD_A_L => self.load,
-            // Instruction.LD_A_HLA => self.load,
-            // Instruction.LD_A_A => self.load,
+            Instruction.LD_D_B => self.loadR8N8(&self.regs.d, self.regs.b),
+            Instruction.LD_D_C => self.loadR8N8(&self.regs.d, self.regs.c),
+            Instruction.LD_D_D => self.loadR8N8(&self.regs.d, self.regs.d),
+            Instruction.LD_D_E => self.loadR8N8(&self.regs.d, self.regs.e),
+            Instruction.LD_D_H => self.loadR8N8(&self.regs.d, self.regs.h),
+            Instruction.LD_D_L => self.loadR8N8(&self.regs.d, self.regs.l),
+            Instruction.LD_D_HLA => self.loadR8N8(&self.regs.d, self.bus.readByte(self.regs.get_hl())),
+            Instruction.LD_D_A => self.loadR8N8(&self.regs.d, self.regs.a),
+            Instruction.LD_E_B => self.loadR8N8(&self.regs.e, self.regs.b),
+            Instruction.LD_E_C => self.loadR8N8(&self.regs.e, self.regs.c),
+            Instruction.LD_E_D => self.loadR8N8(&self.regs.e, self.regs.d),
+            Instruction.LD_E_E => self.loadR8N8(&self.regs.e, self.regs.e),
+            Instruction.LD_E_H => self.loadR8N8(&self.regs.e, self.regs.h),
+            Instruction.LD_E_L => self.loadR8N8(&self.regs.e, self.regs.l),
+            Instruction.LD_E_HLA => self.loadR8N8(&self.regs.e, self.bus.readByte(self.regs.get_hl())),
+            Instruction.LD_E_A => self.loadR8N8(&self.regs.e, self.regs.a),
+            Instruction.LD_H_B => self.loadR8N8(&self.regs.h, self.regs.b),
+            Instruction.LD_H_C => self.loadR8N8(&self.regs.h, self.regs.c),
+            Instruction.LD_H_D => self.loadR8N8(&self.regs.h, self.regs.d),
+            Instruction.LD_H_E => self.loadR8N8(&self.regs.h, self.regs.e),
+            Instruction.LD_H_H => self.loadR8N8(&self.regs.h, self.regs.h),
+            Instruction.LD_H_L => self.loadR8N8(&self.regs.h, self.regs.l),
+            Instruction.LD_H_HLA => self.loadR8N8(&self.regs.h, self.bus.readByte(self.regs.get_hl())),
+            Instruction.LD_H_A => self.loadR8N8(&self.regs.h, self.regs.a),
+            Instruction.LD_L_B => self.loadR8N8(&self.regs.l, self.regs.b),
+            Instruction.LD_L_C => self.loadR8N8(&self.regs.l, self.regs.c),
+            Instruction.LD_L_D => self.loadR8N8(&self.regs.l, self.regs.d),
+            Instruction.LD_L_E => self.loadR8N8(&self.regs.l, self.regs.e),
+            Instruction.LD_L_H => self.loadR8N8(&self.regs.l, self.regs.h),
+            Instruction.LD_L_L => self.loadR8N8(&self.regs.l, self.regs.l),
+            Instruction.LD_L_HLA => self.loadR8N8(&self.regs.l, self.bus.readByte(self.regs.get_hl())),
+            Instruction.LD_L_A => self.loadR8N8(&self.regs.l, self.regs.a),
+            Instruction.LD_HLA_B => self.loadR8N8(&self.bus.memory[self.regs.get_hl()], self.regs.b),
+            Instruction.LD_HLA_C => self.loadR8N8(&self.bus.memory[self.regs.get_hl()], self.regs.c),
+            Instruction.LD_HLA_D => self.loadR8N8(&self.bus.memory[self.regs.get_hl()], self.regs.d),
+            Instruction.LD_HLA_E => self.loadR8N8(&self.bus.memory[self.regs.get_hl()], self.regs.e),
+            Instruction.LD_HLA_H => self.loadR8N8(&self.bus.memory[self.regs.get_hl()], self.regs.h),
+            Instruction.LD_HLA_L => self.loadR8N8(&self.bus.memory[self.regs.get_hl()], self.regs.l),
+            Instruction.LD_HLA_A => self.loadR8N8(&self.bus.memory[self.regs.get_hl()], self.regs.a),
+            Instruction.LD_A_B => self.loadR8N8(&self.regs.a, self.regs.b),
+            Instruction.LD_A_C => self.loadR8N8(&self.regs.a, self.regs.c),
+            Instruction.LD_A_D => self.loadR8N8(&self.regs.a, self.regs.d),
+            Instruction.LD_A_E => self.loadR8N8(&self.regs.a, self.regs.e),
+            Instruction.LD_A_H => self.loadR8N8(&self.regs.a, self.regs.h),
+            Instruction.LD_A_L => self.loadR8N8(&self.regs.a, self.regs.l),
+            Instruction.LD_A_HLA => self.loadR8N8(&self.regs.a, self.bus.readByte(self.regs.get_hl())),
+            Instruction.LD_A_A => self.loadR8N8(&self.regs.a, self.regs.a),
             // Instruction.LDH_a8p_A => self.load,
             // Instruction.LDH_CP_A => self.load,
             // Instruction.LD_a16p_A => self.load,
@@ -129,6 +130,8 @@ const CPU = struct {
             // Instruction.LD_HL_SPPLUSe8 => self.load,
             // Instruction.LD_SP_HL => self.load,
             // Instruction.LD_A_a16p => self.load,
+
+            Instruction.PUSH_AF => self.push(self.regs.get_af()),
             else => 0,
         };
     }
@@ -162,6 +165,14 @@ const CPU = struct {
     //     // const blah = &self.regs.get_af();
     //     blah.* = ;
     // }
+
+    pub fn push(self: *CPU, value: u16) u16 {
+        self.sp -= 1;
+        self.bus.memory[self.sp] = @truncate(value & 0x00FF);
+        self.sp -= 1;
+        self.bus.memory[self.sp] = @truncate((value & 0xFF00) >> 8);
+        return self.pc + 1;
+    }
 
     pub fn add(self: *CPU, value: u8) u16 {
         const sum, self.regs.f.carry = @addWithOverflow(self.regs.a, value);
@@ -213,6 +224,7 @@ const test_register = Registers{
 var cpu = CPU{
     .regs = test_register,
     .pc = 0,
+    .sp = 65535,
     .bus = MemoryBus{ .memory = [_]u8{ 0xCA, 0x05, 0x00, 0x05 } ** 0x4000 },
 };
 
@@ -405,14 +417,45 @@ test "CPU.jumpRelative 0x38=JR_C_e8 does not jump carry flag = 0" {
     try testing.expect(cpu.pc == 2);
 }
 
-test "CPU.loadR8N8 r8" {
+test "CPU.loadR8N8 r8r8" {
     cpu.regs.a = 0;
     cpu.regs.b = 29;
     _ = cpu.loadR8N8(&cpu.regs.a, cpu.regs.b);
     try testing.expect(cpu.regs.a == cpu.regs.b);
 }
-test "CPU.loadR8N8 n8" {
+test "CPU.loadR8N8 r8n8" {
     cpu.regs.a = 0;
     _ = cpu.loadR8N8(&cpu.regs.a, 13);
     try testing.expect(cpu.regs.a == 13);
+}
+test "CPU.loadR8N8 r8HLA" {
+    cpu.regs.a = 0;
+    cpu.regs.set_hl(0x001D);
+    cpu.bus.memory[0x001D] = 23;
+    _ = cpu.loadR8N8(&cpu.regs.a, cpu.bus.readByte(cpu.regs.get_hl()));
+    try testing.expect(cpu.regs.a == 23);
+}
+test "CPU.loadR8N8 HLAr8" {
+    cpu.regs.set_hl(0x2B);
+    _ = cpu.loadR8N8(&cpu.bus.memory[cpu.regs.get_hl()], 15);
+    try testing.expect(cpu.bus.readByte(0x2B) == 15);
+}
+
+test "CPU.push AF" {
+    cpu.pc = 0;
+    cpu.sp = 65535;
+    cpu.regs.set_af(0x1234);
+    cpu.bus.memory[0] = 0xF5;
+    cpu.step();
+    try testing.expect(cpu.bus.readByte(cpu.sp + 1) == 0x34);
+    try testing.expect(cpu.bus.readByte(cpu.sp) == 0x10); // tricky, this is 10 because f register drops lower 4 bits
+}
+test "CPU.push AF no lower 4 bits set in f" {
+    cpu.pc = 0;
+    cpu.sp = 65535;
+    cpu.regs.set_af(0xD034);
+    cpu.bus.memory[0] = 0xF5;
+    cpu.step();
+    try testing.expect(cpu.bus.readByte(cpu.sp + 1) == 0x34);
+    try testing.expect(cpu.bus.readByte(cpu.sp) == 0xD0); // tricky, this is 10 because f register drops lower 4 bits
 }
