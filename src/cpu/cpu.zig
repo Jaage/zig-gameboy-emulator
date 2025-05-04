@@ -13,9 +13,11 @@ const prefixInstFromByte = instructions.prefixInstFromByte;
 
 const CPU = struct {
     regs: Registers,
-    pc: u16,
-    sp: u16,
+    pc: u16 = 0x0150,
+    sp: u16 = 65535,
     bus: MemoryBus,
+    ticks: u8 = 0,
+    total_ticks: u16 = 0,
 
     pub fn executeInst(self: *CPU, inst: Instruction) u16 {
         return switch (inst) {
@@ -156,7 +158,33 @@ const CPU = struct {
                 self.regs.set_af(popped_value);
                 break :blk self.pc +% 1;
             },
+
+            Instruction.RLCA => blk: {
+                self.regs.a = self.rotate_left_carry(self.regs.a);
+                break :blk self.pc +% 1;
+            },
+            Instruction.RLA => blk: {
+                self.regs.a = self.rotate_left(self.regs.a);
+                self.regs.f.zero = 0;
+                break :blk self.pc +% 1;
+            },
+            Instruction.RRCA => blk: {
+                self.regs.a = self.rotate_right_carry(self.regs.a);
+                break :blk self.pc +% 1;
+            },
+            Instruction.RRA => blk: {
+                self.regs.a = self.rotate_right(self.regs.a);
+                self.regs.f.zero = 0;
+                break :blk self.pc +% 1;
+            },
             else => 0,
+
+            // Instruction.RET => blk: {
+            //     const popped_value = self.pop();
+            //     self.pc = popped_value;
+            // }
+            //
+
         };
     }
 
@@ -233,6 +261,45 @@ const CPU = struct {
             return self.pc +% 2;
         }
     }
+
+    pub fn call(self: *CPU, jump_cond: bool) u16 {
+        const next_pc = self.pc +% 3;
+        if (jump_cond) {
+            self.push(next_pc);
+            self.jumpAbsolute(jump_cond);
+        }
+        return next_pc;
+    }
+
+    pub fn rotate_left_carry(self: *CPU, value: u8) u8 {
+        const msb = value >> 7;
+        const rotated_register = (value << 1) | msb;
+        self.regs.f.carry = @truncate(msb);
+        self.regs.f.zero = @intFromBool(rotated_register == 0);
+        return rotated_register;
+    }
+
+    pub fn rotate_right_carry(self: *CPU, value: u8) u8 {
+        const lsb = value << 7;
+        const rotated_register = (value >> 1) | lsb;
+        self.regs.f.carry = @truncate(lsb >> 7);
+        self.regs.f.zero = @intFromBool(rotated_register == 0);
+        return rotated_register;
+    }
+
+    pub fn rotate_left(self: *CPU, value: u8) u8 {
+        const rotated_register = (value << 1) | @as(u8, self.regs.f.carry);
+        self.regs.f.carry = @truncate(value >> 7);
+        self.regs.f.zero = @intFromBool(rotated_register == 0);
+        return rotated_register;
+    }
+
+    pub fn rotate_right(self: *CPU, value: u8) u8 {
+        const rotated_register = (value >> 1) | (@as(u8, self.regs.f.carry) << 7);
+        self.regs.f.zero = @intFromBool(rotated_register == 0);
+        self.regs.f.carry = @truncate(value);
+        return rotated_register;
+    }
 };
 
 const MemoryBus = struct {
@@ -258,6 +325,8 @@ var cpu = CPU{
     .pc = 0,
     .sp = 65535,
     .bus = MemoryBus{ .memory = [_]u8{ 0xCA, 0x05, 0x00, 0x05 } ** 0x4000 },
+    .ticks = 0,
+    .total_ticks = 0,
 };
 
 test "CPU.add register a value" {
@@ -526,5 +595,73 @@ test "CPU.POP_AF" {
     cpu.bus.memory[65533] = 0x53;
     cpu.bus.memory[0] = 0xF1;
     cpu.step();
-    try testing.expect(cpu.regs.get_af() == 0x50F2);
+    try testing.expect(cpu.regs.get_af() == 0x50F2); // 50 gets truncated to 50 due to lower 4 bits of f always being 0
+}
+
+test "CPU.RLA" {
+    cpu.pc = 0;
+    cpu.bus.memory[0] = 0x17;
+    cpu.regs.a = 0b10100000;
+    cpu.regs.f.carry = 0;
+    cpu.step();
+    try testing.expect(cpu.regs.a == 0b01000000);
+    try testing.expect(cpu.regs.f.carry == 1);
+    try testing.expect(cpu.regs.f.zero == 0);
+}
+
+test "CPU.RLA zero" {
+    cpu.pc = 0;
+    cpu.bus.memory[0] = 0x17;
+    cpu.regs.a = 0b10000000;
+    cpu.regs.f.zero = 1;
+    cpu.regs.f.carry = 0;
+    cpu.step();
+    try testing.expect(cpu.regs.a == 0b00000000);
+    try testing.expect(cpu.regs.f.carry == 1);
+    try testing.expect(cpu.regs.f.zero == 0);
+}
+
+test "CPU.RLCA" {
+    cpu.pc = 0;
+    cpu.bus.memory[0] = 0x07;
+    cpu.regs.a = 0b00101001;
+    cpu.regs.f.carry = 0;
+    cpu.step();
+    try testing.expect(cpu.regs.a == 0b01010010);
+    try testing.expect(cpu.regs.f.carry == 0);
+    try testing.expect(cpu.regs.f.zero == 0);
+}
+
+test "CPU.RRA" {
+    cpu.pc = 0;
+    cpu.bus.memory[0] = 0x1F;
+    cpu.regs.a = 0b01011100;
+    cpu.regs.f.carry = 1;
+    cpu.step();
+    try testing.expect(cpu.regs.a == 0b10101110);
+    try testing.expect(cpu.regs.f.zero == 0);
+    try testing.expect(cpu.regs.f.carry == 0);
+}
+
+test "CPU.RRA zero" {
+    cpu.pc = 0;
+    cpu.bus.memory[0] = 0x1F;
+    cpu.regs.a = 0b00000001;
+    cpu.regs.f.zero = 1;
+    cpu.regs.f.carry = 0;
+    cpu.step();
+    try testing.expect(cpu.regs.a == 0);
+    try testing.expect(cpu.regs.f.zero == 0);
+    try testing.expect(cpu.regs.f.carry == 1);
+}
+
+test "CPU.RRCA" {
+    cpu.pc = 0;
+    cpu.bus.memory[0] = 0x0F;
+    cpu.regs.a = 0b11110010;
+    cpu.regs.f.carry = 1;
+    cpu.step();
+    try testing.expect(cpu.regs.a == 0b01111001);
+    try testing.expect(cpu.regs.f.zero == 0);
+    try testing.expect(cpu.regs.f.carry == 0);
 }

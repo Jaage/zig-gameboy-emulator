@@ -7,14 +7,14 @@ const HALF_CARRY_FLAG_BYTE_POSITION: u3 = 5;
 const CARRY_FLAG_BYTE_POSITION: u3 = 4;
 
 pub const Registers = struct {
-    a: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    f: FlagsRegister,
-    h: u8,
-    l: u8,
+    a: u8 = 0,
+    b: u8 = 0,
+    c: u8 = 0,
+    d: u8 = 0,
+    e: u8 = 0,
+    f: FlagsRegister = .{ .zero = 0, .subtract = 0, .half_carry = 0, .carry = 0 },
+    h: u8 = 0,
+    l: u8 = 0,
 
     // setters and getters assume inputs are little endian and output the two bytes in little endian
     pub fn get_af(self: Registers) u16 {
